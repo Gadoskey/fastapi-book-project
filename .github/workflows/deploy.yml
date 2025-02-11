@@ -6,22 +6,29 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy_to_server:  depoy_to_server 
     runs-on: ubuntu-latest
+    needs: test  # Ensure deploy only happens after successful tests
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: SSH into server and deploy
-        uses: appleboy/ssh-action@v0.1.7
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /var/www/fastapi-book-project
-            git pull origin main
-            sudo docker compose down
-            sudo docker compose up -d --build
-            sudo systemctl restart nginx
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Load private SSH key from secrets
+
+      - name: SSH into server and deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            echo "Pulling latest code on the server"
+            cd /var/www/fastapi-book-project || exit
+            git pull origin main || exit
+            echo "Stopping and rebuilding Docker containers"
+            sudo docker compose down || exit
+            sudo docker compose up -d --build || exit
+            echo "Restarting Nginx"
+            sudo systemctl restart nginx || exit
+            echo "Deployment successful"
+          EOF
