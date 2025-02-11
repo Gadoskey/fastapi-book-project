@@ -1,18 +1,18 @@
+version: '1.25.0'
+
 services:
   web:
     build: .
     ports:
-      - "80:80"
+      - "8000:8000"  # Expose the FastAPI app
     volumes:
-      - .:/app
-    depends_on:
-      - nginx
+      - .:/app  # Mount the application directory into the container
 
   nginx:
     image: nginx:alpine
     ports:
-      - "8080:80"
+      - "80:80"  # Expose Nginx on port 80
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Mount the nginx.conf file
     depends_on:
-      - web
+      - web  # Ensure Nginx starts after FastAPI
