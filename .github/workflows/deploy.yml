@@ -16,16 +16,19 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.12.8
+        python-version: 3.12
 
     - name: Install dependencies
       run: |
         python -m venv venv
-        source venv/Scripts/activate
+        source venv/bin/activate  # Fixed path
         pip install -r requirements.txt
         
     - name: Deploy to Production
       run: |
-        # Add deployment commands here
-        # Example: Use rsync, scp, or a deploy command to push the changes to your server
-        echo "Deploying to production..."  # Replace with your actual deployment command
+        echo "Deploying to production..."
+        ssh ubuntu@18.204.15.40 << 'EOF'
+          cd /path/to/your/project
+          git pull origin main
+          docker-compose up --build -d
+        EOF

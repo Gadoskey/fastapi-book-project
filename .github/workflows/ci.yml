@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest 
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -21,10 +21,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m venv venv
-        source venv/Source/activate
+        source venv/bin/activate  # Fixed path
         pip install -r requirements.txt
+        pip install pytest  # Ensure pytest is installed
         
     - name: Run tests
       run: |
-        source venv/Source/activate
+        source venv/bin/activate  # Fixed path
         pytest

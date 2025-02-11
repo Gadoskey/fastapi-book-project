@@ -1,5 +1,5 @@
-# Use official Python image
-FROM python:3.12-slim
+# Use an official lightweight Python image
+FROM python:3.12
 
 # Set working directory
 WORKDIR /app
@@ -8,11 +8,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy the rest of the application
 COPY . .
 
-# Expose the port FastAPI will run on
+# Expose port 8000
 EXPOSE 8000
 
-# Run FastAPI app using Uvicorn
+# Start the FastAPI application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
