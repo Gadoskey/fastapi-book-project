@@ -1,24 +1,18 @@
 # Use a lightweight Python image as the base
 FROM python:3.12-slim
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-  nginx \
-  && rm -rf /var/lib/apt/lists/*
-
-# Set up FastAPI app
+# Set the working directory inside the container
 WORKDIR /app
-COPY . /app
 
-# Install Python dependencies
+# Copy requirements.txt and install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Nginx configuration file
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy the rest of the application
+COPY . .
 
-# Expose the necessary ports
-EXPOSE 80
+# Expose the FastAPI port
 EXPOSE 8000
 
-# Start Nginx and the FastAPI app (using Uvicorn)
-CMD service nginx start && uvicorn main:app --host 0.0.0.0 --port 8000
+# Start FastAPI with Uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
