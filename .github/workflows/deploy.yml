@@ -1,4 +1,4 @@
-name: Deployment Pipeline
+name: CD
 
 on:
   push:
@@ -10,25 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.12
-
-    - name: Install dependencies
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
-        
-    - name: Deploy to Production
-      run: |
-        echo "Deploying to production..."
-        ssh ubuntu@18.204.15.40 << 'EOF'
-          cd /var/www/fastapi-book-project
-          git pull origin main
-          docker-compose up --build -d
-        EOF
+      - name: SSH into server and deploy
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/fastapi-book-project
+            git pull origin main
+            sudo docker compose down
+            sudo docker compose up -d --build
+            sudo systemctl restart nginx
