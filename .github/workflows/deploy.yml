@@ -1,45 +1,56 @@
-name: Deploy FastAPI to Server
+name: CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Expect (for password-based SSH)
-        run: sudo apt-get update && sudo apt-get install -y expect
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_IP }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Ensure system is up to date
+            sudo apt-get update -y
 
-      - name: Deploy to Server
-        run: |
-          mkdir -p ~/.ssh
-          echo -e "Host ${{ secrets.SERVER_HOST }}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-          chmod 600 ~/.ssh/config
-          expect <<EOF
-          spawn ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}
-          expect {
-            -re "Are you sure you want to continue connecting.*" {
-              send "yes\r"
-              exp_continue
-            }
-            "password:" {
-              send "${{ secrets.SERVER_PASSWORD }}\r"
-            }
-          }
-          expect "$ "
-          send "cd /var/www/fastapi-book-project && git pull origin main\r"
-          expect "$ "
-          send "sudo docker stop \$(sudo docker ps -q) || true\r"
-          expect "$ "
-          send "sudo docker rm \$(sudo docker ps -a -q) || true\r"
-          expect "$ "
-          send "sudo docker-compose up -d\r"
-          expect "$ "
-          send "exit\r"
-          EOF
+            # Install Docker if not installed
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo apt-get update -y
+              sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+              sudo usermod -aG docker ${{ secrets.SSH_USERNAME }}
+            fi
+
+            # Install Docker Compose if not installed
+            if ! command -v docker-compose &> /dev/null; then
+              sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Print Docker versions
+            docker --version
+            docker-compose --version
+
+            # Navigate to the project directory
+            cd /var/www/fastapi-book-project || { echo "Cloning repository..."; git clone https://github.com/YOUR_GITHUB_USERNAME/fastapi-book-project.git /var/www/fastapi-book-project; cd /var/www/fastapi-book-project; }
+
+            # Ensure the latest code is pulled
+            git reset --hard origin/main
+            git pull origin main
+
+            # Stop and remove old containers
+            sudo docker stop $(sudo docker ps -q) || true
+            sudo docker rm $(sudo docker ps -a -q) || true
+
+            # Build and start the new containers
+            sudo docker-compose up -d --build
