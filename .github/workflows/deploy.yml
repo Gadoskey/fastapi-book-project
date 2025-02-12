@@ -1,15 +1,23 @@
 name: CD Pipeline
-
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
@@ -18,39 +26,32 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Ensure system is up to date
+            # Update package index and install dependencies
             sudo apt-get update -y
+            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 
-            # Install Docker if not installed
-            if ! command -v docker &> /dev/null; then
-              sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-              sudo apt-get update -y
-              sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-              sudo usermod -aG docker ${{ secrets.SERVER_USER }}
-            fi
+            # Add Docker's official GPG key
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
-            # Install Docker Compose if not installed
-            if ! command -v docker-compose &> /dev/null; then
-              sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-            fi
+            # Install Docker
+            sudo apt-get update -y
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-            # Print Docker versions
+            # Add the SSH user to the Docker group
+            sudo usermod -aG docker ${{ secrets.SSH_USERNAME }}
+
+            # Install Docker Compose
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+
+            # Verify installations
             docker --version
             docker-compose --version
 
-            # Navigate to the project directory
-            cd /var/www/fastapi-book-project || { echo "Cloning repository..."; git clone https://github.com/Gadosey/fastapi-book-project.git /var/www/fastapi-book-project; cd /var/www/fastapi-book-project; }
-
-            # Ensure the latest code is pulled
-            git reset --hard origin/main
+            # Navigate to the project directory and deploy
+            cd /home/ubuntu/
+            git clone <your-github-repo>
+            cd fastapi-book-project/
             git pull origin main
-
-            # Stop and remove old containers
-            sudo docker stop $(sudo docker ps -q) || true
-            sudo docker rm $(sudo docker ps -a -q) || true
-
-            # Build and start the new containers
-            sudo docker-compose up -d --build
+            docker-compose up -d --build
