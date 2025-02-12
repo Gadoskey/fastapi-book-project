@@ -24,7 +24,7 @@ jobs:
           expect <<EOF
           spawn ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}
           expect {
-            "Are you sure you want to continue connecting (yes/no/[fingerprint])?" {
+            -re "Are you sure you want to continue connecting.*" {
               send "yes\r"
               exp_continue
             }
