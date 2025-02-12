@@ -42,7 +42,7 @@ jobs:
             docker-compose --version
 
             # Navigate to the project directory
-            cd /var/www/fastapi-book-project || { echo "Cloning repository..."; git clone https://github.com/YOUR_GITHUB_USERNAME/fastapi-book-project.git /var/www/fastapi-book-project; cd /var/www/fastapi-book-project; }
+            cd /var/www/fastapi-book-project || { echo "Cloning repository..."; git clone https://github.com/Gadosey/fastapi-book-project.git /var/www/fastapi-book-project; cd /var/www/fastapi-book-project; }
 
             # Ensure the latest code is pulled
             git reset --hard origin/main
