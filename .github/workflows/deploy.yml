@@ -27,30 +27,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Allow the CI/CD user to run Docker commands without password prompt (modify sudoers file)
             echo "${{ secrets.SERVER_USER }} ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/local/bin/docker-compose" | sudo tee -a /etc/sudoers
-            
-            # Kill all processes using ports 80 and 8080
             sudo fuser -k 80/tcp
             sudo fuser -k 8080/tcp
-
-            # Stop all running Docker containers
             sudo docker stop $(sudo docker ps -q)
-
-            # Remove all Docker containers
             sudo docker rm $(sudo docker ps -a -q)
-
-            # Navigate to the project directory, clone or pull the latest changes, and restart the services
-            cd /var/www/
-            if [ ! -d "fastapi-book-project" ]; then
-              git clone https://github.com/Gadoskey/fastapi-book-project.git
-            else
-              cd fastapi-book-project/
-              git pull origin main
-            fi
-
-            # Rebuild and start the Docker containers
+            cd /var/www/fastapi-book-project/
+            git pull origin main
             sudo docker-compose up -d --build
-
-            # Restart Nginx to apply any changes
             sudo service nginx restart

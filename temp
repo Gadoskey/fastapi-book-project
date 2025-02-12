@@ -1,0 +1,43 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "${{ secrets.SERVER_USER }} ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/local/bin/docker-compose" | sudo tee -a /etc/sudoers
+            sudo fuser -k 80/tcp
+            sudo fuser -k 8080/tcp
+            sudo docker stop $(sudo docker ps -q)
+            sudo docker rm $(sudo docker ps -a -q)
+            cd /var/www/
+            if [ ! -d "fastapi-book-project" ]; then
+              git clone https://github.com/Gadoskey/fastapi-book-project.git
+            else
+              cd fastapi-book-project/
+              git pull origin main
+            fi
+            sudo docker-compose up -d --build
+            sudo service nginx restart
