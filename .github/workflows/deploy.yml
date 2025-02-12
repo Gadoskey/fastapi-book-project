@@ -17,13 +17,21 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y expect
 
       - name: Deploy to Server
-        env:
-          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
+          mkdir -p ~/.ssh
+          echo -e "Host ${{ secrets.SERVER_HOST }}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
           expect <<EOF
-          spawn ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}
-          expect "password:"
-          send "$env(SERVER_PASSWORD)\r"
+          spawn ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}
+          expect {
+            "Are you sure you want to continue connecting (yes/no/[fingerprint])?" {
+              send "yes\r"
+              exp_continue
+            }
+            "password:" {
+              send "${{ secrets.SERVER_PASSWORD }}\r"
+            }
+          }
           expect "$ "
           send "cd /var/www/fastapi-book-project && git pull origin main\r"
           expect "$ "
@@ -31,11 +39,7 @@ jobs:
           expect "$ "
           send "sudo docker rm \$(sudo docker ps -a -q) || true\r"
           expect "$ "
-          send "sudo docker-compose up -d --build\r"
-          expect "$ "
-          send "sudo service nginx restart\r"
-          expect "$ "
-          send "curl -X GET http://hng.gadoski.tech/api/v1/books/1\r"
+          send "sudo docker-compose up -d\r"
           expect "$ "
           send "exit\r"
           EOF
