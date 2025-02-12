@@ -14,8 +14,8 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SSH_IP }}
-          username: ${{ secrets.SSH_USER }}
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             # Ensure system is up to date
@@ -28,7 +28,7 @@ jobs:
               sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
               sudo apt-get update -y
               sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-              sudo usermod -aG docker ${{ secrets.SSH_USERNAME }}
+              sudo usermod -aG docker ${{ secrets.SERVER_USER }}
             fi
 
             # Install Docker Compose if not installed
