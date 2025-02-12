@@ -3,7 +3,7 @@ name: Deploy FastAPI to Server
 on:
   push:
     branches:
-      - main  # Change this to your deployment branch if different
+      - main
 
 jobs:
   deploy:
@@ -17,11 +17,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y expect
 
       - name: Deploy to Server
+        env:
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           expect <<EOF
           spawn ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}
           expect "password:"
-          send "${{ secrets.SERVER_PASSWORD }}\r"
+          send "$env(SERVER_PASSWORD)\r"
           expect "$ "
           send "cd /var/www/fastapi-book-project && git pull origin main\r"
           expect "$ "
