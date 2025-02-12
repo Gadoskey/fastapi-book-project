@@ -1,0 +1,39 @@
+name: Deploy FastAPI to Server
+
+on:
+  push:
+    branches:
+      - main  # Change this to your deployment branch if different
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Expect (for password-based SSH)
+        run: sudo apt-get update && sudo apt-get install -y expect
+
+      - name: Deploy to Server
+        run: |
+          expect <<EOF
+          spawn ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}
+          expect "password:"
+          send "${{ secrets.SERVER_PASSWORD }}\r"
+          expect "$ "
+          send "cd /var/www/fastapi-book-project && git pull origin main\r"
+          expect "$ "
+          send "sudo docker stop \$(sudo docker ps -q) || true\r"
+          expect "$ "
+          send "sudo docker rm \$(sudo docker ps -a -q) || true\r"
+          expect "$ "
+          send "sudo docker-compose up -d --build\r"
+          expect "$ "
+          send "sudo service nginx restart\r"
+          expect "$ "
+          send "curl -X GET http://hng.gadoski.tech/api/v1/books/1\r"
+          expect "$ "
+          send "exit\r"
+          EOF
