@@ -1,9 +1,0 @@
-ubuntu@502930-web-01:/var/www/fastapi-book-project$ sudo docker stop $(sudo docker ps -q)
-73783ac0cefa
-ubuntu@502930-web-01:/var/www/fastapi-book-project$ sudo docker rm $(sudo docker ps -a -q)
-f8f9c9c55be6
-73783ac0cefa
-ubuntu@502930-web-01:/var/www/fastapi-book-project$ sudo docker-compose up -d
-Creating fastapi-book-project_web_1 ... done
-Creating fastapi-book-project_nginx_1 ... done
-ubuntu@502930-web-01:/var/www/fastapi-book-project$ 
