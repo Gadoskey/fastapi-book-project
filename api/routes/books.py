@@ -29,16 +29,8 @@ db.books = {
         author="J.R.R. Tolkien",
         publication_year=1955,
         genre=Genre.FANTASY,
-    ),
-    4: Book(
-        id=4,
-        title="Hamlet",
-        author="William Shakespeare",
-        publication_year=1903,
-        genre=Genre.FANTASY,
     )
 }
-"""Added another book [4]"""
 
 
 
