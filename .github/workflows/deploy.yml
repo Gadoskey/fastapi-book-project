@@ -28,6 +28,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             echo "${{ secrets.SERVER_USER }} ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/local/bin/docker-compose" | sudo tee -a /etc/sudoers
+            sudo fuser -k 80/tcp
+            sudo fuser -k 8080/tcp
             
             cd /var/www/fastapi-book-project/
             git pull origin main
