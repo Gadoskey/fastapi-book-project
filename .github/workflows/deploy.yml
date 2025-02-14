@@ -1,14 +1,11 @@
 name: CD Pipeline
-
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -22,15 +19,16 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
+
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
+          
           script: |
             echo "${{ secrets.SERVER_USER }} ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/local/bin/docker-compose" | sudo tee -a /etc/sudoers
             sudo fuser -k 80/tcp
-            sudo fuser -k 8080/tcp
-            
+            sudo fuser -k 8080/tcp         
             cd /var/www/fastapi-book-project/
             git pull origin main
             sudo docker-compose up -d --build
